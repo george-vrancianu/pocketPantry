@@ -705,18 +705,14 @@ describe('Barcode on the Scan page', () => {
 
       await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
       await user.click(
-        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+        await screen.findByRole('button', { name: 'Change ingredient' }),
       );
-      const search = within(
-        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
-      ).getByRole('combobox', { name: 'Search ingredients' });
+      const search = screen.getByRole('combobox', {
+        name: 'Matched ingredient',
+      });
       await user.type(search, 'skyr');
       await user.click(await screen.findByRole('option', { name: /Skyr/ }));
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('dialog', { name: /Change match/ }),
-        ).not.toBeInTheDocument(),
-      );
+      await screen.findByRole('dialog', { name: 'Skyr' });
       await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
@@ -904,18 +900,14 @@ describe('Barcode on the Scan page', () => {
       ).toBeVisible();
 
       await user.click(
-        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+        await screen.findByRole('button', { name: 'Change ingredient' }),
       );
-      const search = within(
-        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
-      ).getByRole('combobox', { name: 'Search ingredients' });
+      const search = screen.getByRole('combobox', {
+        name: 'Matched ingredient',
+      });
       await user.type(search, 'skyr');
       await user.click(await screen.findByRole('option', { name: /Skyr/ }));
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('dialog', { name: /Change match/ }),
-        ).not.toBeInTheDocument(),
-      );
+      await screen.findByRole('dialog', { name: 'Skyr' });
       expect(screen.queryByText(/This product lists/)).toBeNull();
     });
 

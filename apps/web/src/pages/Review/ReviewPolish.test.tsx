@@ -126,13 +126,11 @@ describe('Review polish: focus', () => {
     await waitFor(() => expect(row('Parmesan')).toHaveFocus());
   });
 
-  it('opening a complete row focuses its Match button', async () => {
+  it('opening a complete matched row focuses the sheet title', async () => {
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
     await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /^Matched ingredient: Parmesan/ }),
-      ).toHaveFocus(),
+      expect(screen.getByRole('heading', { name: 'Parmesan' })).toHaveFocus(),
     );
   });
 

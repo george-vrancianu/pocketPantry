@@ -102,6 +102,14 @@ async function openSheet(name: string, index = 0) {
   });
 }
 
+/** Clears a matched line's Ingredient token, which starts a search in the sheet. */
+const startChoosing = async (
+  user: Pick<ReturnType<typeof userEvent.setup>, 'click'> = userEvent,
+) => {
+  await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
+  return screen.getByRole('combobox', { name: 'Matched ingredient' });
+};
+
 const sheetClosed = () =>
   waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
@@ -507,47 +515,103 @@ describe('ReviewPage', () => {
     expect(within(panel).getByLabelText('Product description')).toHaveValue(
       'Grana Padano 200g',
     );
-    expect(
-      within(panel).getByRole('button', { name: /Parmesan.*Change/ }),
-    ).toBeInTheDocument();
+    // The matched Ingredient is the chooser's token.
+    expect(within(panel).getByTestId('selected-token')).toHaveTextContent(
+      'Parmesan',
+    );
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
   });
 
-  it('changes the Match in a dialog, taking the new defaults', async () => {
+  it('changes the Match inline in the sheet, taking the new defaults', async () => {
     renderReview([
       line({ expiryDate: null, lowConfidence: true, quantity: 1 }),
     ]);
     await openSheet('Parmesan');
-    await userEvent.click(
-      screen.getByRole('button', { name: /Parmesan.*Change/ }),
-    );
-    const dialog = screen.getByRole('dialog', {
-      name: 'Change match for Parmesan',
-    });
-    const search = within(dialog).getByRole('combobox', {
-      name: 'Search ingredients',
-    });
+    const search = await startChoosing();
     expect(search).toHaveFocus();
+    // No dialog opens, and the sheet's other fields step aside while searching.
+    expect(
+      screen.queryByRole('dialog', { name: /Change match/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Unit: / })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Remove Parmesan' }),
+    ).toBeNull();
     await userEvent.type(search, 'milk');
     const option = await screen.findByRole('option', { name: /Milk/ });
-    // The match dialog has no use for a unit chip.
+    // The chooser has no use for a unit chip.
     expect(option).toHaveAccessibleName('Milk, Hard cheese · Dairy');
     await userEvent.click(option);
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('dialog', { name: /Change match/ }),
-      ).not.toBeInTheDocument(),
-    );
-    // The line's sheet stays open, now titled with the new match.
-    const panel = screen.getByRole('dialog', { name: 'Milk' });
+    // The sheet stays open, now titled with the new match, and the form is back.
+    const panel = await screen.findByRole('dialog', { name: 'Milk' });
     expect(
       within(panel).getByRole('button', { name: 'Unit: ml' }),
     ).toBeInTheDocument();
+    expect(within(panel).getByTestId('selected-token')).toHaveTextContent(
+      'Milk',
+    );
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
-    // The row's Match button keeps focus after the swap.
+  });
+
+  it('starts a search without changing the line when the token is cleared, and keeps the old match if the sheet closes', async () => {
+    renderReview([sure()]);
+    await openSheet('Parmesan');
+    await startChoosing();
+    // Still Parmesan: the row behind and the sheet's title are unchanged.
+    expect(screen.getByRole('dialog', { name: 'Parmesan' })).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await sheetClosed();
+    expect(row('Parmesan')).toBeInTheDocument();
+    // Opened again, the token is back and the form shows.
+    const panel = await openSheet('Parmesan');
+    expect(within(panel).getByTestId('selected-token')).toHaveTextContent(
+      'Parmesan',
+    );
     expect(
-      within(panel).getByRole('button', { name: /Milk.*Change/ }),
-    ).toHaveFocus();
+      within(panel).getByRole('button', { name: 'Unit: g' }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ['Backspace', '{Backspace}'],
+    ['typing', 'x'],
+  ])('%s over the token starts a search', async (_how, keys) => {
+    renderReview([sure()]);
+    await openSheet('Parmesan');
+    const input = screen.getByRole('combobox', {
+      name: /^Ingredient: Parmesan/,
+    });
+    input.focus();
+    await userEvent.keyboard(keys);
+    expect(
+      screen.getByRole('combobox', { name: 'Matched ingredient' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('selected-token')).toBeNull();
+  });
+
+  it('never offers Use as typed on a matched line, and lists an exact-name Ingredient without picking it', async () => {
+    renderReview([sure()], {
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    await openSheet('Parmesan');
+    const search = await startChoosing();
+    await userEvent.type(search, 'Milk');
+    expect(await screen.findByRole('option', { name: /Milk/ })).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    // Listed, not picked by itself: the line is still Parmesan.
+    expect(
+      screen.getByRole('dialog', { name: 'Parmesan' }),
+    ).toBeInTheDocument();
+  });
+
+  it('focuses the sheet title, not the chooser, on a matched line with nothing to fix', async () => {
+    renderReview([sure()]);
+    const panel = await openSheet('Parmesan');
+    await waitFor(() =>
+      expect(
+        within(panel).getByRole('heading', { name: 'Parmesan' }),
+      ).toHaveFocus(),
+    );
   });
 
   it('tells repeated names apart by position, and only then', async () => {
@@ -598,7 +662,7 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('names each repeated row its own Match button', async () => {
+  it('names each repeated row its own sheet and Match button', async () => {
     renderReview([
       line({ lowConfidence: true, quantity: 1 }),
       line({ lowConfidence: true, quantity: 1 }),
@@ -609,10 +673,9 @@ describe('ReviewPage', () => {
       screen.getByRole('button', { name: /Parmesan \(1 of 2\)/ }),
     );
     expect(
-      await screen.findByRole('button', {
-        name: 'Matched ingredient: Parmesan (1 of 2) (Change)',
-      }),
+      await screen.findByRole('dialog', { name: 'Parmesan (1 of 2)' }),
     ).toBeInTheDocument();
+    expect(screen.getByTestId('selected-token')).toHaveTextContent('Parmesan');
     await userEvent.keyboard('{Escape}');
     await sheetClosed();
     await userEvent.click(
@@ -626,10 +689,10 @@ describe('ReviewPage', () => {
   });
 
   it('returns focus to the row when the opener was never focused (Safari)', async () => {
-    renderReview([line({ quantity: 1, lowConfidence: true })]);
-    await openSheet('Parmesan');
+    renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
+    await openSheet('Mystery jar');
     // fireEvent.click does not focus the button, as a tap in Safari does not.
-    fireEvent.click(screen.getByRole('button', { name: /Parmesan.*Change/ }));
+    fireEvent.click(screen.getByRole('button', { name: /No match · Choose/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() =>
       expect(
@@ -637,24 +700,18 @@ describe('ReviewPage', () => {
       ).not.toBeInTheDocument(),
     );
     expect(
-      screen.getByRole('dialog', { name: 'Parmesan' }),
+      screen.getByRole('dialog', { name: 'Mystery jar' }),
     ).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     await sheetClosed();
-    await waitFor(() => expect(row('Parmesan')).toHaveFocus());
+    await waitFor(() => expect(row('Mystery jar')).toHaveFocus());
   });
 
   it('opens and works as a bottom sheet at 899 px, the widest phone layout', async () => {
     stubViewport(899);
     renderReview([line({ quantity: 1, lowConfidence: true })]);
     await openSheet('Parmesan');
-    await userEvent.click(
-      screen.getByRole('button', { name: /Parmesan.*Change/ }),
-    );
-    await userEvent.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'milk',
-    );
+    await userEvent.type(await startChoosing(), 'milk');
     await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
     expect(
       await screen.findByRole('dialog', { name: 'Milk' }),
@@ -721,17 +778,17 @@ describe('ReviewPage', () => {
     ],
     ['Escape', () => userEvent.keyboard('{Escape}')],
   ])(
-    'leaves the line unchanged and returns focus when %s closes the dialog',
+    'leaves an Unmatched line unchanged and returns focus when %s closes the dialog',
     async (_how, close) => {
-      renderReview([sure({ quantity: 2 })]);
-      await openSheet('Parmesan');
+      renderReview([line({ match: null, name: 'Mystery jar', quantity: 2 })]);
+      await openSheet('Mystery jar');
       const values = () => [
         screen.getByRole('button', { name: /^Unit: / }).textContent,
         pressedLocation(),
         screen.getByRole('button', { name: /^Expires,/ }).textContent,
       ];
       const before = values();
-      const opener = screen.getByRole('button', { name: /Parmesan.*Change/ });
+      const opener = screen.getByRole('button', { name: /No match · Choose/ });
       await userEvent.click(opener);
       expect(
         screen.getByRole('dialog', { name: /Change match/ }),
@@ -743,7 +800,7 @@ describe('ReviewPage', () => {
         ).not.toBeInTheDocument(),
       );
       expect(opener).toHaveFocus();
-      expect(sheet('Parmesan')).toBeInTheDocument();
+      expect(sheet('Mystery jar')).toBeInTheDocument();
       expect(values()).toEqual(before);
     },
   );
@@ -998,21 +1055,10 @@ describe('ReviewPage', () => {
       );
       await done(user);
 
-      await user.click(
-        screen.getByRole('button', { name: /Parmesan.*Change/ }),
-      );
-      await user.type(
-        within(
-          screen.getByRole('dialog', { name: 'Change match for Parmesan' }),
-        ).getByRole('combobox', { name: 'Search ingredients' }),
-        'milk',
-      );
+      await user.click(row('Parmesan'));
+      await user.type(await startChoosing(user), 'milk');
       await user.click(await screen.findByRole('option', { name: /Milk/ }));
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('dialog', { name: /Change match/ }),
-        ).not.toBeInTheDocument(),
-      );
+      await screen.findByRole('dialog', { name: 'Milk' });
       expect(
         screen.getByRole('button', {
           name: /^Expires, Monday, December 28,/,
@@ -1023,21 +1069,13 @@ describe('ReviewPage', () => {
 });
 
 describe('ReviewPage match dialog has no Browse by aisle', () => {
-  it('offers no Browse by aisle in Change match and never lists Aisles', async () => {
+  it('offers no Browse by aisle in the inline chooser and never lists Aisles', async () => {
     const calls = renderReview(
       [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
       { 'GET /api/catalog/aisles': () => Response.json({ aisles: [] }) },
     );
     await openSheet('Parmesan');
-    await userEvent.click(
-      screen.getByRole('button', { name: /Parmesan.*Change/ }),
-    );
-    const dialog = screen.getByRole('dialog', {
-      name: 'Change match for Parmesan',
-    });
-    await userEvent.click(
-      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
-    );
+    await userEvent.click(await startChoosing());
 
     expect(screen.queryByText('Browse by aisle')).not.toBeInTheDocument();
     expect(calls?.some((c) => c.key === 'GET /api/catalog/aisles')).toBeFalsy();
@@ -1049,7 +1087,7 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('is offered in the Match dialog search, which has no Use as typed', async () => {
+  it('is offered in the inline chooser, which has no Use as typed', async () => {
     // A low-confidence line shows its Change button without opening the row.
     renderReview(
       [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
@@ -1058,19 +1096,9 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
       },
     );
     await openSheet('Parmesan');
-    await userEvent.click(
-      screen.getByRole('button', { name: /Parmesan.*Change/ }),
-    );
-    const dialog = screen.getByRole('dialog', {
-      name: 'Change match for Parmesan',
-    });
+    await userEvent.type(await startChoosing(), 'kombucha');
 
-    await userEvent.type(
-      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
-      'kombucha',
-    );
-
-    const options = await within(dialog).findAllByRole('option');
+    const options = await screen.findAllByRole('option');
     expect(options).toHaveLength(1);
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });

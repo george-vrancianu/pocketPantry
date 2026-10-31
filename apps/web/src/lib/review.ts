@@ -123,6 +123,21 @@ export function withMatch(
   };
 }
 
+/** What the Ingredient chooser (dialog or inline) gets from a line's Barcode Lookup. */
+export function matchSearchInputs(line: ReviewLine): {
+  /** Pre-types the search for a product the lookup could not match with confidence. */
+  query: string;
+  /** Ticked in the Contains row of a new Family Ingredient: the Allergens the product lists. */
+  allergenIds: string[] | undefined;
+} {
+  return {
+    query: line.lookup && !line.match ? line.name.trim() : '',
+    allergenIds: line.lookup?.listedAllergens.length
+      ? line.lookup.listedAllergens.map((allergen) => allergen.id)
+      : undefined,
+  };
+}
+
 /** What the Review screen calls a line: the Ingredient it matched, else the name the Scan read. */
 export const displayName = (line: ReviewLine) => line.match?.name ?? line.name;
 

@@ -1,10 +1,12 @@
 import { Box, Sheet, tokens } from '@pocket-pantry/ui';
-import type { CatalogParent } from '../../../lib/catalog';
+import { useState } from 'react';
+import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
 import {
   displayName,
   type ReviewLine,
   type RowStatus,
 } from '../../../lib/review';
+import { sheetTitleId } from './layout';
 import { RowEditPanel } from './RowEditPanel';
 
 type Props = {
@@ -23,6 +25,7 @@ type Props = {
   onExited: () => void;
   onChange: (patch: Partial<ReviewLine>) => void;
   onSwapMatch: () => void;
+  onPickMatch: (match: CatalogSearchResult) => void;
   onRemove: () => void;
   onConfirm: () => void;
 };
@@ -37,16 +40,24 @@ export function ReviewLineSheet({
   onExited,
   ...panel
 }: Props) {
+  // Bumped once the sheet has closed, so a search left half-done is gone (the old match stays) when it opens again.
+  const [opened, setOpened] = useState(0);
   return (
     <Sheet
       open={open}
       onClose={onClose}
       onEntered={onEntered}
-      onExited={onExited}
+      onExited={() => {
+        setOpened((n) => n + 1);
+        onExited();
+      }}
       label={accessibleName}
       header={
         <Box
           component="h2"
+          id={sheetTitleId(line.key)}
+          // Focus lands here (not on a field) when a matched line has nothing to fix.
+          tabIndex={-1}
           sx={{
             m: 0,
             px: '20px',
@@ -61,7 +72,12 @@ export function ReviewLineSheet({
         </Box>
       }
     >
-      <RowEditPanel line={line} accessibleName={accessibleName} {...panel} />
+      <RowEditPanel
+        key={opened}
+        line={line}
+        accessibleName={accessibleName}
+        {...panel}
+      />
     </Sheet>
   );
 }

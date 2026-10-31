@@ -2,16 +2,18 @@ import {
   Box,
   IconButton,
   DeleteIcon,
-  SwapIcon,
   tokens,
   color,
   radius,
 } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent } from '../../../lib/catalog';
+import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import {
   displayName,
   invalidFields,
+  matchSearchInputs,
   type ReviewLine,
   type RowStatus,
 } from '../../../lib/review';
@@ -19,7 +21,7 @@ import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import { AmountField } from '../../../components/AmountField';
 import { ExpiryField } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
-import { Field, controlSx } from './Field';
+import { Field, controlSx, fieldLabelSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
@@ -35,7 +37,10 @@ type Props = {
   sure: boolean;
   parents: CatalogParent[];
   onChange: (patch: Partial<ReviewLine>) => void;
+  /** An unmatched line's "Choose" button: opens the Match dialog. */
   onSwapMatch: () => void;
+  /** A matched line's chooser picked another Ingredient. */
+  onPickMatch: (match: CatalogSearchResult) => void;
   onRemove: () => void;
   onConfirm: () => void;
   /** A Save or Confirm was blocked on this row: show every error now. */
@@ -52,6 +57,7 @@ export function RowEditPanel({
   parents,
   onChange,
   onSwapMatch,
+  onPickMatch,
   onRemove,
   onConfirm,
   blocked,
@@ -68,6 +74,9 @@ export function RowEditPanel({
     ? `${t('review:match.none')} · ${t('review:match.choose')}`
     : name;
   const id = (field: string) => fieldId(line.key, field);
+  // A matched line's chooser: once its token is cleared the Member is searching and only the search shows.
+  const [searching, setSearching] = useState(false);
+  const lookupInputs = matchSearchInputs(line);
   const message = unmatched
     ? t('review:msg.unmatched')
     : status === 'low'
@@ -78,7 +87,7 @@ export function RowEditPanel({
 
   return (
     <Box sx={{ px: '20px', pt: '2px', pb: '24px' }}>
-      {message ? (
+      {message && !searching ? (
         <Box
           role="note"
           sx={{
@@ -94,191 +103,201 @@ export function RowEditPanel({
           {message}
         </Box>
       ) : null}
-      {line.lookup ? (
+      {line.lookup && !searching ? (
         <BarcodeLookupNotes lookup={line.lookup} mb="8px" />
       ) : null}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <Field htmlFor={id('match')} label={t('review:field.match')}>
-          <Box
-            id={id('match')}
-            component="button"
-            type="button"
-            // A label alone would name the button "Matched ingredient" and hide which Ingredient is matched.
-            // An Unmatched line leads with its own name so it never reads as the matched Ingredient.
-            aria-label={
-              unmatched
-                ? t('review:match.unmatchedLabel', { name: accessibleName })
-                : `${t('review:field.match')}: ${accessibleName} (${t('review:match.change')})`
-            }
-            aria-haspopup="dialog"
-            onClick={onSwapMatch}
-            sx={{
-              ...controlSx,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
-          >
+        {unmatched ? (
+          <Field htmlFor={id('match')} label={t('review:field.match')}>
             <Box
-              component="span"
+              id={id('match')}
+              component="button"
+              type="button"
+              // An Unmatched line leads with its own name so it never reads as the matched Ingredient.
+              aria-label={t('review:match.unmatchedLabel', {
+                name: accessibleName,
+              })}
+              aria-haspopup="dialog"
+              onClick={onSwapMatch}
               sx={{
-                flexGrow: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                color: unmatched ? tokens.color.muted : tokens.color.ink,
+                ...controlSx,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                textAlign: 'left',
+                cursor: 'pointer',
               }}
             >
-              {matchText}
+              <Box
+                component="span"
+                sx={{
+                  flexGrow: 1,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  color: tokens.color.muted,
+                }}
+              >
+                {matchText}
+              </Box>
             </Box>
-            {unmatched ? null : (
-              <>
-                <SwapIcon size={16} color={tokens.color.accent} />
-                <Box
-                  component="span"
-                  sx={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: tokens.color.accent,
-                  }}
-                >
-                  {t('review:match.change')}
-                </Box>
-              </>
-            )}
+          </Field>
+        ) : (
+          <Box sx={{ minWidth: 0 }}>
+            <Box component="span" sx={fieldLabelSx}>
+              {t('review:field.match')}
+            </Box>
+            {/* No "Use as typed": a matched line can never become Unmatched. */}
+            <CatalogSearch
+              showUnit={false}
+              label={t('review:field.match')}
+              selected={searching ? null : line.match}
+              defaultQuery={lookupInputs.query}
+              newIngredientAllergenIds={lookupInputs.allergenIds}
+              // Clearing the token (×, a tap, a key) only starts a search; the line changes on a pick.
+              onQueryChange={() => setSearching(true)}
+              onSelect={(match) => {
+                setSearching(false);
+                onPickMatch(match);
+              }}
+            />
           </Box>
-        </Field>
+        )}
 
-        {unmatched ? (
-          <Field
-            htmlFor={id('name')}
-            label={t('review:field.name')}
-            error={
-              invalid.includes('name') ? t('review:error.name') : undefined
-            }
-            errorId={`${id('name')}-error`}
-          >
-            <NameInput
-              line={line}
-              onChange={onChange}
-              id={id('name')}
-              invalid={invalid.includes('name')}
-              errorId={`${id('name')}-error`}
-            />
-          </Field>
-        ) : null}
-
-        {unmatched ? (
-          <Field htmlFor={id('category')} label={t('review:field.category')}>
-            <CategorySelect
-              line={line}
-              onChange={onChange}
-              id={id('category')}
-              parents={parents}
-              otherLabel={t('review:categoryOther')}
-            />
-          </Field>
-        ) : null}
-
-        <Field
-          htmlFor={id('description')}
-          label={t('review:field.description')}
-        >
-          <DescriptionInput
-            line={line}
-            onChange={onChange}
-            id={id('description')}
-          />
-        </Field>
-
-        {/* The same amount, Location and expiry fields as adding a Batch in the Pantry, one per line. */}
-        <Box sx={{ minWidth: 0 }}>
-          <AmountField
-            id={id('quantity')}
-            name={name}
-            quantity={line.quantity}
-            unit={line.unit}
-            onQuantityChange={(quantity, unit) =>
-              onChange({ quantity, ...(unit ? { unit } : {}) })
-            }
-            onUnitChange={(unit) => {
-              if (unit) onChange({ unit });
-            }}
-            error={
-              invalid.includes('quantity')
-                ? t('pantry:form.quantityInvalid')
-                : null
-            }
-            // Enter has no save here; Confirm below closes the row.
-            onSubmit={() => {}}
-            // A Review line always carries a unit.
-            allowNoUnit={false}
-            amountScale={line.match?.amountScale}
-            label={t('common:amount.placeholder')}
-            height={56}
-            // A misread amount is corrected here, not converted: a new unit keeps the number.
-            rescaleOnUnitChange={false}
-          />
-        </Box>
-
-        <Box sx={{ minWidth: 0 }}>
-          <LocationToggle
-            label={t('pantry:form.location')}
-            value={line.location}
-            onChange={(location) => onChange({ location })}
-          />
-        </Box>
-
-        <Box sx={{ minWidth: 0 }}>
-          <ExpiryField
-            id={id('expiry')}
-            label={t('pantry:picker.label')}
-            {...expiry}
-            error={expiryError ? t('review:error.expiry') : null}
-          />
-        </Box>
-
+        {/* While searching the results take the sheet's height: the other fields step aside. */}
         <Box
-          sx={{
-            display: 'flex',
-            gap: '8px',
-            alignSelf: 'flex-end',
-          }}
+          hidden={searching}
+          sx={{ display: searching ? 'none' : 'contents' }}
         >
-          <IconButton
-            label={t('review:action.remove', { name: accessibleName })}
-            tone="urgentOutline"
-            size={40}
-            onClick={onRemove}
+          {unmatched ? (
+            <Field
+              htmlFor={id('name')}
+              label={t('review:field.name')}
+              error={
+                invalid.includes('name') ? t('review:error.name') : undefined
+              }
+              errorId={`${id('name')}-error`}
+            >
+              <NameInput
+                line={line}
+                onChange={onChange}
+                id={id('name')}
+                invalid={invalid.includes('name')}
+                errorId={`${id('name')}-error`}
+              />
+            </Field>
+          ) : null}
+
+          {unmatched ? (
+            <Field htmlFor={id('category')} label={t('review:field.category')}>
+              <CategorySelect
+                line={line}
+                onChange={onChange}
+                id={id('category')}
+                parents={parents}
+                otherLabel={t('review:categoryOther')}
+              />
+            </Field>
+          ) : null}
+
+          <Field
+            htmlFor={id('description')}
+            label={t('review:field.description')}
           >
-            <DeleteIcon size={18} />
-          </IconButton>
+            <DescriptionInput
+              line={line}
+              onChange={onChange}
+              id={id('description')}
+            />
+          </Field>
+
+          {/* The same amount, Location and expiry fields as adding a Batch in the Pantry, one per line. */}
+          <Box sx={{ minWidth: 0 }}>
+            <AmountField
+              id={id('quantity')}
+              name={name}
+              quantity={line.quantity}
+              unit={line.unit}
+              onQuantityChange={(quantity, unit) =>
+                onChange({ quantity, ...(unit ? { unit } : {}) })
+              }
+              onUnitChange={(unit) => {
+                if (unit) onChange({ unit });
+              }}
+              error={
+                invalid.includes('quantity')
+                  ? t('pantry:form.quantityInvalid')
+                  : null
+              }
+              // Enter has no save here; Confirm below closes the row.
+              onSubmit={() => {}}
+              // A Review line always carries a unit.
+              allowNoUnit={false}
+              amountScale={line.match?.amountScale}
+              label={t('common:amount.placeholder')}
+              height={56}
+              // A misread amount is corrected here, not converted: a new unit keeps the number.
+              rescaleOnUnitChange={false}
+            />
+          </Box>
+
+          <Box sx={{ minWidth: 0 }}>
+            <LocationToggle
+              label={t('pantry:form.location')}
+              value={line.location}
+              onChange={(location) => onChange({ location })}
+            />
+          </Box>
+
+          <Box sx={{ minWidth: 0 }}>
+            <ExpiryField
+              id={id('expiry')}
+              label={t('pantry:picker.label')}
+              {...expiry}
+              error={expiryError ? t('review:error.expiry') : null}
+            />
+          </Box>
+
           <Box
-            component="button"
-            type="button"
-            onClick={onConfirm}
             sx={{
-              flexGrow: 1,
-              height: 40,
-              border: 0,
-              borderRadius: radius.control,
-              bgcolor: tokens.color.accent,
-              color: color.accentInk,
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: tokens.color.accentHover },
-              '&:focus-visible': {
-                outline: `3px solid ${tokens.color.accent}`,
-                outlineOffset: 2,
-              },
+              display: 'flex',
+              gap: '8px',
+              alignSelf: 'flex-end',
             }}
           >
-            {t(sure ? 'review:action.done' : 'review:action.confirm')}
+            <IconButton
+              label={t('review:action.remove', { name: accessibleName })}
+              tone="urgentOutline"
+              size={40}
+              onClick={onRemove}
+            >
+              <DeleteIcon size={18} />
+            </IconButton>
+            <Box
+              component="button"
+              type="button"
+              onClick={onConfirm}
+              sx={{
+                flexGrow: 1,
+                height: 40,
+                border: 0,
+                borderRadius: radius.control,
+                bgcolor: tokens.color.accent,
+                color: color.accentInk,
+                fontFamily: 'inherit',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: tokens.color.accentHover },
+                '&:focus-visible': {
+                  outline: `3px solid ${tokens.color.accent}`,
+                  outlineOffset: 2,
+                },
+              }}
+            >
+              {t(sure ? 'review:action.done' : 'review:action.confirm')}
+            </Box>
           </Box>
         </Box>
       </Box>

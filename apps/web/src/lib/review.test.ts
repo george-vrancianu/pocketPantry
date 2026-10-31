@@ -4,6 +4,7 @@ import { defaultExpiryDate } from './pantry';
 import {
   invalidFields,
   isLineValid,
+  matchSearchInputs,
   statusOf,
   toNewBatch,
   toReviewLine,
@@ -224,5 +225,39 @@ describe('toNewBatch', () => {
         toReviewLine(line({ match: null, sourceText: null }), 'a', today),
       ),
     ).not.toHaveProperty('sourceText');
+  });
+});
+
+describe('matchSearchInputs', () => {
+  const milk = { id: 'milk', name: 'Milk' };
+  const withLookup = (match: ProposedLine['match']) => ({
+    ...toReviewLine(line({ match, name: ' Skyr ' }), 'a', today),
+    lookup: {
+      fromOpenFoodFacts: true,
+      listedAllergens: [milk],
+      missingAllergens: [],
+    },
+  });
+
+  it('pre-types the product name and lists the Allergens for an Unmatched lookup', () => {
+    expect(matchSearchInputs(withLookup(null))).toEqual({
+      query: 'Skyr',
+      allergenIds: ['milk'],
+    });
+  });
+
+  it('pre-types nothing for a matched line, and passes no Allergens when none are listed', () => {
+    const matched = withLookup(line().match);
+    expect(matchSearchInputs(matched).query).toBe('');
+    expect(
+      matchSearchInputs({
+        ...matched,
+        lookup: { ...matched.lookup, listedAllergens: [] },
+      }).allergenIds,
+    ).toBeUndefined();
+    expect(matchSearchInputs(toReviewLine(line(), 'a', today))).toEqual({
+      query: '',
+      allergenIds: undefined,
+    });
   });
 });

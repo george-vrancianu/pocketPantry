@@ -20,7 +20,7 @@ export const controlSx = {
 } as const;
 
 /** The small caption above each control in the edit panel. */
-const fieldLabelSx = {
+export const fieldLabelSx = {
   display: 'block',
   mb: '4px',
   fontSize: 11,

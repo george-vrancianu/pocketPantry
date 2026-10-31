@@ -14,6 +14,7 @@ import {
   type ReviewField,
   reviewLinesOf,
   type ReviewLine,
+  matchSearchInputs,
 } from '../../../lib/review';
 import { firstFocusField } from '../../../lib/reviewFocus';
 import {
@@ -35,7 +36,12 @@ import {
   unverifiedState,
   type UnverifiedState,
 } from '../../../lib/unverifiedState';
-import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
+import {
+  EXCLUDED_TOGGLE_ID,
+  fieldId,
+  rowId,
+  sheetTitleId,
+} from '../components/layout';
 
 /**
  * Review screen state for one card of the Scan Session. The Member's edits live here, and are
@@ -128,6 +134,7 @@ export function useReviewScreen(
   const swapOpener = useRef<HTMLElement | null>(null);
   const [restoreOpener, setRestoreOpener] = useState(false);
   const swapLine = state.lines.find((l) => l.key === swapKey) ?? null;
+  const swapInputs = swapLine ? matchSearchInputs(swapLine) : null;
   const openSwap = (key: string) => {
     // Safari and macOS Firefox do not focus a clicked button: then there is no opener to return to.
     const el = document.activeElement;
@@ -154,6 +161,9 @@ export function useReviewScreen(
     dispatch({ type: 'changeMatch', key: swapKey, match, today: new Date() });
     closeSwap();
   };
+  // The phone sheet's inline chooser: the same change as the dialog's pick, without a dialog to close.
+  const pickMatch = (key: string, match: CatalogSearchResult) =>
+    dispatch({ type: 'changeMatch', key, match, today: new Date() });
   // Opening a row by hand puts focus on its first empty field (else Match); shutting it returns to its button.
   // Rows open on load never come through here, so they do not steal focus.
   // The tablet has no Match field to open on, so it names the input to land on instead.
@@ -181,7 +191,10 @@ export function useReviewScreen(
     if (!line) return;
     setSheetKey(key);
     dispatch({ type: 'openOnly', key });
-    enterFocus.current = fieldId(key, firstFocusField(line));
+    const field = firstFocusField(line);
+    // A matched line with nothing to fix has no field to land on: the title, not the chooser.
+    enterFocus.current =
+      field === 'match' && line.match ? sheetTitleId(key) : fieldId(key, field);
   };
   const sheetEntered = () => {
     const id = enterFocus.current;
@@ -313,15 +326,14 @@ export function useReviewScreen(
     sheetExited,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
-    swapQuery: swapLine?.lookup && !swapLine.match ? swapLine.name.trim() : '',
+    swapQuery: swapInputs?.query ?? '',
     /** Undefined when the line lists none (never []), as the add-Batch form passes it. */
-    swapAllergenIds: swapLine?.lookup?.listedAllergens.length
-      ? swapLine.lookup.listedAllergens.map((allergen) => allergen.id)
-      : undefined,
+    swapAllergenIds: swapInputs?.allergenIds,
     swapOpen,
     openSwap,
     closeSwap,
     changeMatch,
+    pickMatch,
     remove,
     restore,
     confirm,
