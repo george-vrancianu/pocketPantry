@@ -465,6 +465,29 @@ describe('Barcode on the Scan page', () => {
     });
   });
 
+  /** The Review's only line row (its sheet opens when tapped). */
+  const tapOnlyRow = async (user: ReturnType<typeof userEvent.setup>) => {
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('button')
+          .filter((button) => button.id.startsWith('review-line-')),
+      ).toHaveLength(1),
+    );
+    await user.click(
+      screen
+        .getAllByRole('button')
+        .filter((button) => button.id.startsWith('review-line-'))[0],
+    );
+  };
+  /** Dismisses the line's sheet (its edits stay) so the page behind it can be reached. */
+  const closeSheet = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  };
+
   describe('the lookup result', () => {
     it('reads a found product into one prefilled line', async () => {
       const user = userEvent.setup();
@@ -505,12 +528,9 @@ describe('Barcode on the Scan page', () => {
 
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
-      expect(screen.getByLabelText('Name')).toHaveValue('Greek yogurt');
-      await user.click(
-        await screen.findByRole('button', { name: /No match · Choose/ }),
-      );
+      await tapOnlyRow(user);
       expect(
-        await screen.findByRole('combobox', { name: 'Search ingredients' }),
+        await screen.findByRole('combobox', { name: 'Matched ingredient' }),
       ).toHaveValue('Greek yogurt');
     });
 
@@ -681,16 +701,15 @@ describe('Barcode on the Scan page', () => {
 
       await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
       await user.click(
-        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+        await screen.findByRole('button', { name: 'Change ingredient' }),
       );
-      const search = within(
-        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
-      ).getByRole('combobox', { name: 'Search ingredients' });
+      const search = screen.getByRole('combobox', {
+        name: 'Matched ingredient',
+      });
       await user.type(search, 'skyr');
       await user.click(await screen.findByRole('option', { name: /Skyr/ }));
-      await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-      );
+      await screen.findByRole('dialog', { name: 'Skyr' });
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
       await waitFor(() =>
@@ -762,7 +781,17 @@ describe('Barcode on the Scan page', () => {
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
 
-      await user.type(await screen.findByLabelText('Name'), 'Mystery jar');
+      await tapOnlyRow(user);
+      const search = await screen.findByRole('combobox', {
+        name: 'Matched ingredient',
+      });
+      await user.type(search, 'Mystery jar');
+      await user.click(
+        await screen.findByRole('option', {
+          name: /Use “Mystery jar” as typed/,
+        }),
+      );
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
       await waitFor(() =>
@@ -799,7 +828,11 @@ describe('Barcode on the Scan page', () => {
       await waitFor(() => expectStack('read'));
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
-      expect(await screen.findByLabelText('Name')).toHaveValue('Grandma jam');
+      await tapOnlyRow(user);
+      expect(
+        await screen.findByRole('combobox', { name: 'Matched ingredient' }),
+      ).toHaveValue('Grandma jam');
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
       await waitFor(() =>
@@ -841,6 +874,7 @@ describe('Barcode on the Scan page', () => {
       await user.click(await screen.findByTestId('card-result'));
       if (row)
         await user.click(await screen.findByRole('button', { name: row }));
+      else await tapOnlyRow(user);
       return user;
     }
 
@@ -859,7 +893,7 @@ describe('Barcode on the Scan page', () => {
 
     it('gives no credit to a not-found line', async () => {
       await openLine({ found: false }, null);
-      await screen.findByLabelText('Name');
+      await screen.findByRole('combobox', { name: 'Matched ingredient' });
       expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
     });
 
@@ -872,16 +906,14 @@ describe('Barcode on the Scan page', () => {
       ).toBeVisible();
 
       await user.click(
-        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+        await screen.findByRole('button', { name: 'Change ingredient' }),
       );
-      const search = within(
-        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
-      ).getByRole('combobox', { name: 'Search ingredients' });
+      const search = screen.getByRole('combobox', {
+        name: 'Matched ingredient',
+      });
       await user.type(search, 'skyr');
       await user.click(await screen.findByRole('option', { name: /Skyr/ }));
-      await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-      );
+      await screen.findByRole('dialog', { name: 'Skyr' });
       expect(screen.queryByText(/This product lists/)).toBeNull();
     });
 
@@ -921,9 +953,6 @@ describe('Barcode on the Scan page', () => {
       const user = await openLine(
         found({ match: null, lowConfidence: true, allergens: [MILK] }),
         null,
-      );
-      await user.click(
-        await screen.findByRole('button', { name: /No match · Choose/ }),
       );
       await user.click(
         await screen.findByRole('button', {

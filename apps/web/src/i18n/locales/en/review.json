@@ -62,11 +62,10 @@
   },
   "categoryOther": "Not sure",
   "match": {
-    "none": "No match",
     "choose": "Choose",
     "change": "Change",
-    "unmatchedLabel": "{{name}}: No match · Choose",
-    "dialogTitle": "Change match for {{name}}"
+    "dialogTitle": "Change match for {{name}}",
+    "unmatchedTag": "Unmatched"
   },
   "action": {
     "remove": "Remove {{name}}",

@@ -82,6 +82,8 @@ export type CatalogSearchProps = {
   defaultQuery?: string;
   /** The search input, for a host that moves focus into it. */
   inputRef?: RefObject<HTMLInputElement | null>;
+  /** DOM id of the search input, for a host that moves focus to it by id. */
+  inputId?: string;
   /** Allergens a Family Ingredient created from this search starts with ticked (a proposal, not a tag). */
   newIngredientAllergenIds?: readonly string[];
   /**
@@ -114,6 +116,7 @@ export function CatalogSearch({
   rowTag,
   defaultOpen = false,
   inputRef: hostInputRef,
+  inputId,
   newIngredientAllergenIds,
   inline = false,
 }: CatalogSearchProps) {
@@ -370,6 +373,7 @@ export function CatalogSearch({
     >
       <SearchField
         inputRef={inputRef}
+        inputId={inputId}
         label={name}
         placeholder={placeholder}
         value={query}

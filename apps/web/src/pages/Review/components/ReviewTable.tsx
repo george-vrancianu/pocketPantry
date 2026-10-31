@@ -1,6 +1,6 @@
 import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent } from '../../../lib/catalog';
+import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
 import {
   accessibleNamesOf,
   displayName,
@@ -11,6 +11,7 @@ import type { CameraMode } from '../../../lib/cameraMode';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import { ExcludedRow } from './ExcludedRow';
 import { ReviewGroup } from './ReviewGroup';
+import { ReviewLineSheet } from './ReviewLineSheet';
 import { ReviewRow } from './ReviewRow';
 import { rowGridSx } from './layout';
 
@@ -18,9 +19,15 @@ type Props = {
   state: ReviewState;
   groups: { review: ReviewLine[]; sure: ReviewLine[]; excluded: ReviewLine[] };
   parents: CatalogParent[];
-  onToggle: (key: string) => void;
+  /** The key of the line whose sheet is open, kept after it closes so the sheet fades with its content. */
+  sheetKey: string | null;
+  sheetOpen: boolean;
+  onOpenSheet: (key: string) => void;
+  onCloseSheet: () => void;
+  onSheetEntered: () => void;
+  onSheetExited: () => void;
   onChange: (key: string, patch: Partial<ReviewLine>) => void;
-  onSwapMatch: (key: string) => void;
+  onPickMatch: (key: string, match: CatalogSearchResult) => void;
   onRemove: (key: string) => void;
   onConfirm: (key: string) => void;
   onRestore: (key: string) => void;
@@ -35,9 +42,14 @@ export function ReviewTable({
   state,
   groups,
   parents,
-  onToggle,
+  sheetKey,
+  sheetOpen,
+  onOpenSheet,
+  onCloseSheet,
+  onSheetEntered,
+  onSheetExited,
   onChange,
-  onSwapMatch,
+  onPickMatch,
   onRemove,
   onConfirm,
   onRestore,
@@ -55,19 +67,13 @@ export function ReviewTable({
       key={line.key}
       line={line}
       status={statusOf(line, !!state.confirmed[line.key])}
-      groupStatus={rowGroup(state, line)}
-      open={!!state.open[line.key]}
-      parents={parents}
+      open={sheetOpen && sheetKey === line.key}
       mode={mode}
-      blocked={!!blocked[line.key]}
-      onToggle={() => onToggle(line.key)}
-      onChange={(patch) => onChange(line.key, patch)}
-      onSwapMatch={() => onSwapMatch(line.key)}
-      onRemove={() => onRemove(line.key)}
-      onConfirm={() => onConfirm(line.key)}
+      onOpen={() => onOpenSheet(line.key)}
       accessibleName={accessibleNameOf(line)}
     />
   );
+  const sheetLine = state.lines.find((l) => l.key === sheetKey) ?? null;
   const columns = ['product', 'qty', 'location', 'expiry'];
 
   return (
@@ -116,6 +122,24 @@ export function ReviewTable({
         </ReviewGroup>
       ) : null}
       <ExcludedRow lines={groups.excluded} onRestore={onRestore} />
+      {sheetLine ? (
+        <ReviewLineSheet
+          open={sheetOpen}
+          line={sheetLine}
+          status={statusOf(sheetLine, !!state.confirmed[sheetLine.key])}
+          sure={rowGroup(state, sheetLine) === 'ok'}
+          parents={parents}
+          blocked={!!blocked[sheetLine.key]}
+          accessibleName={accessibleNameOf(sheetLine)}
+          onClose={onCloseSheet}
+          onEntered={onSheetEntered}
+          onExited={onSheetExited}
+          onChange={(patch) => onChange(sheetLine.key, patch)}
+          onPickMatch={(match) => onPickMatch(sheetLine.key, match)}
+          onRemove={() => onRemove(sheetLine.key)}
+          onConfirm={() => onConfirm(sheetLine.key)}
+        />
+      ) : null}
     </Box>
   );
 }

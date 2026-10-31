@@ -18,6 +18,8 @@ import { SelectedToken } from './SelectedToken';
 
 export type SearchFieldProps = {
   inputRef: Ref<HTMLInputElement>;
+  /** DOM id of the input, for a host that moves focus to it by id. */
+  inputId?: string;
   /** Accessible name when nothing is selected. */
   label: string;
   /** Placeholder when empty; defaults to the generic search one. */
@@ -54,6 +56,7 @@ const SPINNER_SIZE = 18;
 /** The 50 pt search input: search icon, a right slot (spinner or clear ×), and the selected token. */
 export function SearchField({
   inputRef,
+  inputId,
   label,
   placeholder,
   value,
@@ -141,6 +144,7 @@ export function SearchField({
       <Box
         component="input"
         ref={inputRef}
+        id={inputId}
         role="combobox"
         aria-label={
           selected ? t('search.selectedLabel', { name: selected.name }) : label

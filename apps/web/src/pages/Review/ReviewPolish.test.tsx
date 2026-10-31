@@ -98,70 +98,79 @@ describe('Review polish: focus', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('does not move focus for rows that start open', () => {
+  it('opens nothing on load and does not move focus', () => {
     renderReview([line({ lowConfidence: true })]);
-    expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'true');
+    expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(document.body).toHaveFocus();
   });
 
-  it('opening a row with a missing quantity focuses Quantity, and shutting it returns to the row', async () => {
+  it('opening a row with a missing quantity focuses Quantity, and closing the sheet returns to the row', async () => {
     renderReview([line({ quantity: null })]);
     await userEvent.click(row('Parmesan'));
-    expect(screen.getByLabelText(/^Amount of/)).toHaveFocus();
-    await userEvent.click(row('Parmesan'));
-    expect(row('Parmesan')).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^Amount of/)).toHaveFocus(),
+    );
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(row('Parmesan')).toHaveFocus());
   });
 
   it('focuses Quantity with motion enabled too', async () => {
     stubMotion(false);
     renderReview([line({ quantity: null })]);
     await userEvent.click(row('Parmesan'));
-    expect(screen.getByLabelText(/^Amount of/)).toHaveFocus();
-    await userEvent.click(row('Parmesan'));
-    expect(row('Parmesan')).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^Amount of/)).toHaveFocus(),
+    );
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(row('Parmesan')).toHaveFocus());
   });
 
-  it('opening a complete row focuses its Match button', async () => {
+  it('opening a complete matched row focuses the sheet title', async () => {
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
-    expect(
-      screen.getByRole('button', { name: /^Matched ingredient: Parmesan/ }),
-    ).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Parmesan' })).toHaveFocus(),
+    );
   });
 
-  it('opening an Unmatched row with a blank name focuses Name', async () => {
+  it('opening an Unmatched row with a blank name focuses the chooser', async () => {
     renderReview([line({ match: null, name: '  ', quantity: 1 })]);
-    // Unmatched rows start open: shut it, then open it by hand.
     await userEvent.click(row('  '));
-    await userEvent.click(row('  '));
-    expect(screen.getByLabelText('Name')).toHaveFocus();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Matched ingredient' }),
+      ).toHaveFocus(),
+    );
   });
 
   it('Done on a confident row returns focus to the row', async () => {
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
     await userEvent.click(screen.getByRole('button', { name: 'Done' }));
-    expect(row('Parmesan')).toHaveFocus();
+    await waitFor(() => expect(row('Parmesan')).toHaveFocus());
   });
 });
 
 describe('Review polish: motion', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shuts the panel at once under reduced motion', async () => {
+  it('closes the sheet at once under reduced motion', async () => {
     stubMotion(true);
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
     expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
-    await userEvent.click(row('Parmesan'));
-    expect(screen.queryByLabelText(/^Amount of/)).not.toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByLabelText(/^Amount of/)).not.toBeInTheDocument(),
+    );
   });
 
-  it('animates the panel away otherwise', async () => {
+  it('slides the sheet away otherwise', async () => {
     stubMotion(false);
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
-    await userEvent.click(row('Parmesan'));
+    await userEvent.keyboard('{Escape}');
     expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByLabelText(/^Amount of/)).not.toBeInTheDocument(),
@@ -198,18 +207,24 @@ describe('Review polish: unverified toast', () => {
 
   it('does not count a line the Member confirmed', async () => {
     renderReview([line({ lowConfidence: true })]);
+    await userEvent.click(row('Parmesan'));
     await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Save 1 item' }),
+    );
     await screen.findByText('state:null');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('does not count removed lines', async () => {
     renderReview([line({ lowConfidence: true }), line({ name: 'Milk' })]);
+    await userEvent.click(row('Parmesan'));
     await userEvent.click(
-      screen.getByRole('button', { name: /^Remove Parmesan/ }),
+      await screen.findByRole('button', { name: /^Remove Parmesan/ }),
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Save 1 item' }),
+    );
     await screen.findByText('state:null');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });

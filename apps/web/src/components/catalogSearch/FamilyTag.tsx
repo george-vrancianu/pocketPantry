@@ -1,10 +1,10 @@
 import { Box, tokens, radius } from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/** The "Family" pill after the name of a Family Ingredient: row, token. */
-export function FamilyTag() {
+/** The small butter pill after an ingredient's name: "Family", "Unmatched". */
+export function NamePill({ children }: { children: ReactNode }) {
   const { color } = tokens;
-  const { t } = useTranslation('catalog');
   return (
     <Box
       component="span"
@@ -21,7 +21,13 @@ export function FamilyTag() {
         verticalAlign: 'middle',
       }}
     >
-      {t('search.familyTag')}
+      {children}
     </Box>
   );
+}
+
+/** The "Family" pill after the name of a Family Ingredient: row, token. */
+export function FamilyTag() {
+  const { t } = useTranslation('catalog');
+  return <NamePill>{t('search.familyTag')}</NamePill>;
 }

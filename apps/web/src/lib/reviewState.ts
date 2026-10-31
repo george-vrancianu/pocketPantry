@@ -21,6 +21,10 @@ export type ReviewState = {
 export type ReviewAction =
   | { type: 'toggle'; key: string }
   | { type: 'open'; key: string }
+  /** Phone: the sheet holds one line, so opening it shuts any other. */
+  | { type: 'openOnly'; key: string }
+  /** Phone: the sheet was dismissed; the row is shut without being confirmed. */
+  | { type: 'close'; key: string }
   | { type: 'confirm'; key: string }
   | { type: 'remove'; key: string }
   | { type: 'restore'; key: string }
@@ -65,7 +69,14 @@ function shutRow(state: ReviewState, key: string): ReviewState {
   return { ...state, open, held };
 }
 
-export function initReviewState(lines: ReviewLine[]): ReviewState {
+/**
+ * `openToCheck` opens the rows to check on load (the tablet's editing rows);
+ * the phone opens nothing by itself.
+ */
+export function initReviewState(
+  lines: ReviewLine[],
+  openToCheck = true,
+): ReviewState {
   const initial: ReviewState = {
     lines,
     open: {},
@@ -73,6 +84,7 @@ export function initReviewState(lines: ReviewLine[]): ReviewState {
     held: {},
     sureOpen: true,
   };
+  if (!openToCheck) return initial;
   return lines
     .filter(isIncluded)
     .filter((line) => statusOf(line, false) === 'low')
@@ -99,6 +111,16 @@ export function reviewReducer(
         : openRow(state, action.key);
     case 'open':
       return openRow(state, action.key);
+    case 'openOnly':
+      return openRow(
+        Object.keys(state.open).reduce(
+          (next, key) => (key === action.key ? next : shutRow(next, key)),
+          state,
+        ),
+        action.key,
+      );
+    case 'close':
+      return shutRow(state, action.key);
     case 'confirm':
       // The row moves to Confident, which must show for the row to take focus.
       return shutRow(

@@ -84,7 +84,29 @@ describe('initReviewState', () => {
   });
 });
 
+describe('initReviewState on the phone', () => {
+  it('opens nothing by itself', () => {
+    const lines = start().lines;
+    const state = initReviewState(lines, false);
+    expect(state.open).toEqual({});
+    expect(state.held).toEqual({});
+  });
+});
+
 describe('reviewReducer', () => {
+  it('opens one row at a time with openOnly, and close shuts it without confirming', () => {
+    const first = run(initReviewState(start().lines, false), {
+      type: 'openOnly',
+      key: 'k1',
+    });
+    const second = run(first, { type: 'openOnly', key: 'k2' });
+    expect(second.open).toEqual({ k2: true });
+    expect(second.held.k1).toBeUndefined();
+    const closed = run(second, { type: 'close', key: 'k2' });
+    expect(closed.open).toEqual({});
+    expect(closed.confirmed.k2).toBeFalsy();
+  });
+
   it('toggles a row open and shut', () => {
     const opened = run(start(), { type: 'toggle', key: 'k1' });
     expect(opened.open.k1).toBe(true);
