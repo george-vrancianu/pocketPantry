@@ -21,7 +21,7 @@ import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import { AmountField } from '../../../components/AmountField';
 import { ExpiryField } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
-import { Field, controlSx } from './Field';
+import { Field, controlSx, fieldLabelSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
@@ -145,16 +145,7 @@ export function RowEditPanel({
           </Field>
         ) : (
           <Box sx={{ minWidth: 0 }}>
-            <Box
-              component="span"
-              sx={{
-                display: 'block',
-                mb: '4px',
-                fontSize: 11,
-                fontWeight: 600,
-                color: tokens.color.muted,
-              }}
-            >
+            <Box component="span" sx={fieldLabelSx}>
               {t('review:field.match')}
             </Box>
             {/* No "Use as typed": a matched line can never become Unmatched. */}

@@ -134,6 +134,7 @@ export function useReviewScreen(
   const swapOpener = useRef<HTMLElement | null>(null);
   const [restoreOpener, setRestoreOpener] = useState(false);
   const swapLine = state.lines.find((l) => l.key === swapKey) ?? null;
+  const swapInputs = swapLine ? matchSearchInputs(swapLine) : null;
   const openSwap = (key: string) => {
     // Safari and macOS Firefox do not focus a clicked button: then there is no opener to return to.
     const el = document.activeElement;
@@ -325,11 +326,9 @@ export function useReviewScreen(
     sheetExited,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
-    swapQuery: swapLine ? matchSearchInputs(swapLine).query : '',
+    swapQuery: swapInputs?.query ?? '',
     /** Undefined when the line lists none (never []), as the add-Batch form passes it. */
-    swapAllergenIds: swapLine
-      ? matchSearchInputs(swapLine).allergenIds
-      : undefined,
+    swapAllergenIds: swapInputs?.allergenIds,
     swapOpen,
     openSwap,
     closeSwap,
