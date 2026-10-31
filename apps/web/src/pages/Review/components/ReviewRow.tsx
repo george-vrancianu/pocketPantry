@@ -1,13 +1,11 @@
 import {
   Box,
-  Collapse,
   tokens,
   visuallyHidden,
   radius,
   insetFocusRing,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent } from '../../../lib/catalog';
 import type { CameraMode } from '../../../lib/cameraMode';
 import { formatShortDate } from '../../../lib/dateFormat';
 import {
@@ -16,47 +14,32 @@ import {
   type RowStatus,
 } from '../../../lib/review';
 import { SourceText } from './SourceText';
-import { RowEditPanel } from './RowEditPanel';
 import { StatusIcon } from '../../../components/StatusIcon';
-import { ROW_TINT, panelId, rowGridSx, rowId, titleId } from './layout';
+import { ROW_TINT, rowGridSx, rowId, titleId } from './layout';
 
 type Props = {
   line: ReviewLine;
   /** Live status: drives the icon, the tint and the message. */
   status: RowStatus;
-  /** The group the row sits in; "ok" makes the button read "Done". */
-  groupStatus: RowStatus;
+  /** The row's sheet is open. */
   open: boolean;
-  parents: CatalogParent[];
   mode: CameraMode;
-  blocked: boolean;
-  onToggle: () => void;
-  onChange: (patch: Partial<ReviewLine>) => void;
-  onSwapMatch: () => void;
-  onRemove: () => void;
-  onConfirm: () => void;
+  onOpen: () => void;
   /** From `accessibleNamesOf`: the display name, position-qualified when repeated. */
   accessibleName: string;
 };
 
 /**
  * One line of the table: a single button (name, quantity, Location, expiry)
- * that opens into its edit panel. A missing quantity shows an amber "? unit"
+ * that opens the line's sheet. A missing quantity shows an amber "? unit"
  * pill so it is spotted without opening the row.
  */
 export function ReviewRow({
   line,
   status,
-  groupStatus,
   open,
-  parents,
   mode,
-  blocked,
-  onToggle,
-  onChange,
-  onSwapMatch,
-  onRemove,
-  onConfirm,
+  onOpen,
   accessibleName,
 }: Props) {
   const { t } = useTranslation(['review', 'common']);
@@ -64,7 +47,8 @@ export function ReviewRow({
   // A repeated name: assistive tech reads the qualified one, the eye sees the plain one.
   const qualified = accessibleName !== name;
   const unit = t(`common:units.${line.unit}`);
-  const background = open ? ROW_TINT[status] : tokens.color.surface;
+  // A row to check is tinted by its status; a sure one stays plain.
+  const background = status !== 'ok' ? ROW_TINT[status] : tokens.color.surface;
   const cell = {
     fontSize: 12,
     minWidth: 0,
@@ -85,9 +69,9 @@ export function ReviewRow({
         id={rowId(line.key)}
         component="button"
         type="button"
+        aria-haspopup="dialog"
         aria-expanded={open}
-        aria-controls={open ? panelId(line.key) : undefined}
-        onClick={onToggle}
+        onClick={onOpen}
         sx={{
           ...rowGridSx,
           width: '100%',
@@ -169,21 +153,6 @@ export function ReviewRow({
           {formatShortDate(line.expiryDate)}
         </Box>
       </Box>
-      <Collapse open={open}>
-        <RowEditPanel
-          line={line}
-          status={status}
-          sure={groupStatus === 'ok'}
-          parents={parents}
-          blocked={blocked}
-          background={background}
-          onChange={onChange}
-          onSwapMatch={onSwapMatch}
-          onRemove={onRemove}
-          onConfirm={onConfirm}
-          accessibleName={accessibleName}
-        />
-      </Collapse>
     </Box>
   );
 }

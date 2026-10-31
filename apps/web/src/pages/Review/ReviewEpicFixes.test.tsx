@@ -198,7 +198,9 @@ describe('Review overview, epic review fixes', () => {
       await userEvent.click(
         await screen.findByRole('button', { name: 'Remove Rice' }),
       );
-      await userEvent.click(screen.getByRole('button', { name: 'test back' }));
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'test back' }),
+      );
       await userEvent.click(
         await screen.findByRole('button', { name: /^Add(?! from photos)/ }),
       );
@@ -365,7 +367,9 @@ describe('Review overview, epic review fixes', () => {
       await userEvent.click(
         await screen.findByRole('button', { name: 'Remove Bag' }),
       );
-      await userEvent.click(screen.getByRole('button', { name: 'test back' }));
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'test back' }),
+      );
       await userEvent.click(
         await screen.findByRole('button', { name: /merge with previous/i }),
       );

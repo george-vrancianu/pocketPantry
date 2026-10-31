@@ -18,7 +18,6 @@ export const rowId = (key: string) => `review-line-${key}`;
 export const titleId = (key: string) => `review-line-${key}-title`;
 /** DOM id of the Excluded row's button, where focus goes when no row is left after a Remove. */
 export const EXCLUDED_TOGGLE_ID = 'review-excluded-toggle';
-export const panelId = (key: string) => `review-line-${key}-panel`;
 /** DOM id of one of a row's inputs, so a blocked Save can focus the first invalid one. */
 export const fieldId = (key: string, field: string) =>
   `review-line-${key}-${field}`;

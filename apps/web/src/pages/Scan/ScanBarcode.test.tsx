@@ -465,6 +465,29 @@ describe('Barcode on the Scan page', () => {
     });
   });
 
+  /** The Review's only line row (its sheet opens when tapped). */
+  const tapOnlyRow = async (user: ReturnType<typeof userEvent.setup>) => {
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('button')
+          .filter((button) => button.id.startsWith('review-line-')),
+      ).toHaveLength(1),
+    );
+    await user.click(
+      screen
+        .getAllByRole('button')
+        .filter((button) => button.id.startsWith('review-line-'))[0],
+    );
+  };
+  /** Dismisses the line's sheet (its edits stay) so the page behind it can be reached. */
+  const closeSheet = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  };
+
   describe('the lookup result', () => {
     it('reads a found product into one prefilled line', async () => {
       const user = userEvent.setup();
@@ -505,7 +528,8 @@ describe('Barcode on the Scan page', () => {
 
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
-      expect(screen.getByLabelText('Name')).toHaveValue('Greek yogurt');
+      await tapOnlyRow(user);
+      expect(await screen.findByLabelText('Name')).toHaveValue('Greek yogurt');
       await user.click(
         await screen.findByRole('button', { name: /No match · Choose/ }),
       );
@@ -689,8 +713,11 @@ describe('Barcode on the Scan page', () => {
       await user.type(search, 'skyr');
       await user.click(await screen.findByRole('option', { name: /Skyr/ }));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: /Change match/ }),
+        ).not.toBeInTheDocument(),
       );
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
       await waitFor(() =>
@@ -762,7 +789,9 @@ describe('Barcode on the Scan page', () => {
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
 
+      await tapOnlyRow(user);
       await user.type(await screen.findByLabelText('Name'), 'Mystery jar');
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
       await waitFor(() =>
@@ -799,7 +828,9 @@ describe('Barcode on the Scan page', () => {
       await waitFor(() => expectStack('read'));
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
+      await tapOnlyRow(user);
       expect(await screen.findByLabelText('Name')).toHaveValue('Grandma jam');
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
       await waitFor(() =>
@@ -841,6 +872,7 @@ describe('Barcode on the Scan page', () => {
       await user.click(await screen.findByTestId('card-result'));
       if (row)
         await user.click(await screen.findByRole('button', { name: row }));
+      else await tapOnlyRow(user);
       return user;
     }
 
@@ -880,7 +912,9 @@ describe('Barcode on the Scan page', () => {
       await user.type(search, 'skyr');
       await user.click(await screen.findByRole('option', { name: /Skyr/ }));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: /Change match/ }),
+        ).not.toBeInTheDocument(),
       );
       expect(screen.queryByText(/This product lists/)).toBeNull();
     });

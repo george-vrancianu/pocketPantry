@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBreakpointUp } from '@pocket-pantry/ui';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   useCatalogParents,
@@ -69,10 +70,13 @@ export function useReviewScreen(
     dispatchScanSession({ type: 'remove', id: scanId });
     return getScanSession().scans.length > 0 ? '/scan/review' : fallback;
   };
+  // The phone (and the host's Setup Review) edits one line at a time in a sheet; the tablet edits inline.
+  const wide = useBreakpointUp('md');
+  const phone = host !== undefined || !wide;
   const [state, dispatch] = useReducer(
     reviewReducer,
     draft?.lines ?? [],
-    initReviewState,
+    (lines: ReviewLine[]) => initReviewState(lines, !phone),
   );
   // Every change goes back to the card, so Add all saves what the Member sees.
   const initialLines = useRef(state.lines);
@@ -165,6 +169,40 @@ export function useReviewScreen(
     );
   };
   const open = (key: string) => dispatch({ type: 'open', key });
+  // The phone's sheet: one line open at a time. The key outlives the sheet so its content does not change while it fades out.
+  const [sheetKey, setSheetKey] = useState<string | null>(null);
+  const sheetOpen = phone && sheetKey !== null && !!state.open[sheetKey];
+  // Where focus goes once the sheet has finished closing (the dialog hands focus back to its opener first).
+  const exitFocus = useRef<string | null>(null);
+  // Where focus goes once the sheet has finished opening (the dialog takes focus itself while it opens).
+  const enterFocus = useRef<string | null>(null);
+  const openSheet = (key: string) => {
+    const line = state.lines.find((l) => l.key === key);
+    if (!line) return;
+    setSheetKey(key);
+    dispatch({ type: 'openOnly', key });
+    enterFocus.current = fieldId(key, firstFocusField(line));
+  };
+  const sheetEntered = () => {
+    const id = enterFocus.current;
+    enterFocus.current = null;
+    if (id) document.getElementById(id)?.focus();
+  };
+  const closeSheet = () => {
+    if (sheetKey === null) return;
+    exitFocus.current = rowId(sheetKey);
+    dispatch({ type: 'close', key: sheetKey });
+  };
+  const sheetExited = () => {
+    const id = exitFocus.current;
+    exitFocus.current = null;
+    if (id) document.getElementById(id)?.focus();
+  };
+  // Focus after an action that shuts the sheet waits for the close; otherwise it is immediate.
+  const focusAfterAction = (id: string) => {
+    if (sheetOpen) exitFocus.current = id;
+    else setFocusId(id);
+  };
   // Rows whose Save or Confirm was blocked, so their panels show every error.
   const [blocked, setBlocked] = useState<Record<string, boolean>>({});
   // Focus moves to the next row in display order, else the Excluded button, rather than being lost to the page.
@@ -176,19 +214,31 @@ export function useReviewScreen(
     const order = rendered.map((l) => l.key);
     const next = order[order.indexOf(key) + 1];
     dispatch({ type: 'remove', key });
-    setFocusId(next ? rowId(next) : EXCLUDED_TOGGLE_ID);
+    focusAfterAction(next ? rowId(next) : EXCLUDED_TOGGLE_ID);
   };
   const restore = (key: string) => {
     dispatch({ type: 'restore', key });
+    // The phone does not open a sheet for an added-back line: the Member taps its row.
+    if (phone) dispatch({ type: 'close', key });
     setFocusId(rowId(key));
   };
   /** Open the first line with an invalid value and focus that field. Returns whether there was one. */
   const focusInvalid = (candidates: ReviewLine[]) => {
     const line = candidates.find((l) => invalidFields(l).length > 0);
     if (!line) return false;
-    dispatch({ type: 'open', key: line.key });
+    const target = fieldId(line.key, invalidFields(line)[0]);
+    if (phone) {
+      // A sheet that is already open takes focus now; one that is opening takes it once it has opened.
+      const alreadyOpen = sheetOpen && sheetKey === line.key;
+      setSheetKey(line.key);
+      dispatch({ type: 'openOnly', key: line.key });
+      if (alreadyOpen) setFocusId(target);
+      else enterFocus.current = target;
+    } else {
+      dispatch({ type: 'open', key: line.key });
+      setFocusId(target);
+    }
     setBlocked((was) => ({ ...was, [line.key]: true }));
-    setFocusId(fieldId(line.key, invalidFields(line)[0]));
     return true;
   };
   // Confirm and Done shut the row; an invalid value keeps it open and takes focus instead.
@@ -196,7 +246,7 @@ export function useReviewScreen(
     const line = state.lines.find((l) => l.key === key);
     if (line && focusInvalid([line])) return;
     dispatch({ type: 'confirm', key });
-    setFocusId(rowId(key));
+    focusAfterAction(rowId(key));
   };
 
   /** Opens and focuses the first line with an invalid value; true when there was one. */
@@ -255,6 +305,12 @@ export function useReviewScreen(
     blocked,
     toggle,
     open,
+    sheetKey,
+    sheetOpen,
+    openSheet,
+    closeSheet,
+    sheetEntered,
+    sheetExited,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
     swapQuery: swapLine?.lookup && !swapLine.match ? swapLine.name.trim() : '',

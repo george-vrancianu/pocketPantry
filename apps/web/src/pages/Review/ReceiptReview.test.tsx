@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -114,7 +114,7 @@ describe('Receipt Review', () => {
       screen.getByRole('button', { name: 'Add SACOSA BIO back' }),
     );
     expect(
-      screen.getByRole('button', { name: /SACOSA BIO/, expanded: true }),
+      screen.getByRole('button', { name: /SACOSA BIO/, expanded: false }),
     ).toHaveFocus();
   });
 
@@ -166,7 +166,7 @@ describe('Receipt Review', () => {
     });
   });
 
-  it('adds an excluded line back as an open, editable Unmatched line that is then saved', async () => {
+  it('adds an excluded line back as an editable Unmatched line that is then saved', async () => {
     const calls = renderReceiptReview([milkLine, bagLine]);
     await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
     await userEvent.click(
@@ -175,8 +175,15 @@ describe('Receipt Review', () => {
     expect(
       screen.queryByRole('button', { name: /Excluded/ }),
     ).not.toBeInTheDocument();
-    const panel = screen.getByRole('group', { name: 'SACOSA BIO' });
+    // Added back, the line is listed to check but nothing opens by itself.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /SACOSA BIO/ }));
+    const panel = await screen.findByRole('dialog', { name: 'SACOSA BIO' });
     expect(within(panel).getByRole('note')).toHaveTextContent(/No match/);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     expect(screen.getByRole('button', { name: 'Save 2 items' })).toBeEnabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
@@ -199,7 +206,9 @@ describe('Receipt Review', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Remove Milk (1 of 2)' }),
     );
-    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Excluded · 1/ }),
+    );
     expect(screen.getByText('Removed by you')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
     await screen.findByText('pantry screen');

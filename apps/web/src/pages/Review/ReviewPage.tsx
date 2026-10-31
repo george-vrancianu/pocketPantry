@@ -128,7 +128,12 @@ export function ReviewPage({
         state={screen.state}
         groups={groups}
         parents={screen.parents}
-        onToggle={screen.toggle}
+        sheetKey={screen.sheetKey}
+        sheetOpen={screen.sheetOpen}
+        onOpenSheet={screen.openSheet}
+        onCloseSheet={screen.closeSheet}
+        onSheetEntered={screen.sheetEntered}
+        onSheetExited={screen.sheetExited}
         onChange={screen.change}
         onSwapMatch={screen.openSwap}
         onRemove={screen.remove}
