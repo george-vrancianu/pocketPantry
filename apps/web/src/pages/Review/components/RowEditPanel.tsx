@@ -21,11 +21,10 @@ import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import { AmountField } from '../../../components/AmountField';
 import { ExpiryField } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
-import { Field, controlSx, fieldLabelSx } from './Field';
+import { Field, fieldLabelSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
-  NameInput,
   useReviewLineExpiry,
 } from './RowInputs';
 import { fieldId } from './layout';
@@ -37,9 +36,7 @@ type Props = {
   sure: boolean;
   parents: CatalogParent[];
   onChange: (patch: Partial<ReviewLine>) => void;
-  /** An unmatched line's "Choose" button: opens the Match dialog. */
-  onSwapMatch: () => void;
-  /** A matched line's chooser picked another Ingredient. */
+  /** The chooser picked an Ingredient (another one, or a first one for an Unmatched line). */
   onPickMatch: (match: CatalogSearchResult) => void;
   onRemove: () => void;
   onConfirm: () => void;
@@ -49,6 +46,18 @@ type Props = {
   accessibleName: string;
 };
 
+/** The chooser's token for a name kept as typed: only its name and tag show. */
+const typedResult: CatalogSearchResult = {
+  id: '',
+  name: '',
+  owner: 'family',
+  defaultUnit: 'pcs',
+  amountScale: 'medium',
+  defaults: { expiryDays: null, location: null },
+  leafCategory: { id: '', name: '' },
+  parentCategory: { id: '', name: '', aisle: { id: '', name: '' } },
+};
+
 /** The expanded half of a row: why it needs a look, then every field of the line. */
 export function RowEditPanel({
   line,
@@ -56,7 +65,6 @@ export function RowEditPanel({
   sure,
   parents,
   onChange,
-  onSwapMatch,
   onPickMatch,
   onRemove,
   onConfirm,
@@ -70,13 +78,19 @@ export function RowEditPanel({
   const invalid = invalidFields(line);
   // Dates are picked in the sheet here, so an invalid one is left over from typing in the table: say so once a Save is blocked.
   const expiryError = invalid.includes('expiry') && blocked;
-  const matchText = unmatched
-    ? `${t('review:match.none')} · ${t('review:match.choose')}`
-    : name;
   const id = (field: string) => fieldId(line.key, field);
   // A matched line's chooser: once its token is cleared the Member is searching and only the search shows.
   const [searching, setSearching] = useState(false);
+  // An Unmatched line kept under the typed name shows it as a token with an Unmatched pill.
+  const [typedToken, setTypedToken] = useState(false);
   const lookupInputs = matchSearchInputs(line);
+  // An Unmatched line opens with the scanned name already typed, so suggestions show straight away.
+  const query = unmatched ? line.name.trim() : lookupInputs.query;
+  const nameInvalid = unmatched && invalid.includes('name');
+  const token: CatalogSearchResult | null = searching
+    ? null
+    : (line.match ??
+      (typedToken ? { ...typedResult, name: line.name.trim() } : null));
   const message = unmatched
     ? t('review:msg.unmatched')
     : status === 'low'
@@ -107,88 +121,59 @@ export function RowEditPanel({
         <BarcodeLookupNotes lookup={line.lookup} mb="8px" />
       ) : null}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {unmatched ? (
-          <Field htmlFor={id('match')} label={t('review:field.match')}>
-            <Box
-              id={id('match')}
-              component="button"
-              type="button"
-              // An Unmatched line leads with its own name so it never reads as the matched Ingredient.
-              aria-label={t('review:match.unmatchedLabel', {
-                name: accessibleName,
-              })}
-              aria-haspopup="dialog"
-              onClick={onSwapMatch}
-              sx={{
-                ...controlSx,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-              <Box
-                component="span"
-                sx={{
-                  flexGrow: 1,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  color: tokens.color.muted,
-                }}
-              >
-                {matchText}
-              </Box>
-            </Box>
-          </Field>
-        ) : (
-          <Box sx={{ minWidth: 0 }}>
-            <Box component="span" sx={fieldLabelSx}>
-              {t('review:field.match')}
-            </Box>
-            {/* No "Use as typed": a matched line can never become Unmatched. */}
-            <CatalogSearch
-              showUnit={false}
-              label={t('review:field.match')}
-              selected={searching ? null : line.match}
-              defaultQuery={lookupInputs.query}
-              newIngredientAllergenIds={lookupInputs.allergenIds}
-              // Clearing the token (×, a tap, a key) only starts a search; the line changes on a pick.
-              onQueryChange={() => setSearching(true)}
-              onSelect={(match) => {
-                setSearching(false);
-                onPickMatch(match);
-              }}
-            />
+        <Box sx={{ minWidth: 0 }}>
+          <Box component="span" sx={fieldLabelSx}>
+            {t('review:field.match')}
           </Box>
-        )}
+          {/* "Use as typed" only while Unmatched: a matched line can never become Unmatched. */}
+          <CatalogSearch
+            showUnit={false}
+            inputId={id('match')}
+            label={t('review:field.match')}
+            selected={token}
+            selectedTag={
+              typedToken ? t('review:match.unmatchedTag') : undefined
+            }
+            selectedMeta={
+              typedToken ? t('catalog:search.useTypedHint') : undefined
+            }
+            defaultQuery={query}
+            newIngredientAllergenIds={lookupInputs.allergenIds}
+            describedBy={nameInvalid ? `${id('name')}-error` : undefined}
+            // Clearing the token (x, a tap, a key) only starts a search; a matched line changes on a pick.
+            onQueryChange={() => {
+              setSearching(true);
+              setTypedToken(false);
+            }}
+            onSelect={(match) => {
+              setSearching(false);
+              onPickMatch(match);
+            }}
+            onUseTyped={
+              unmatched
+                ? (typed) => {
+                    onChange({ name: typed });
+                    setTypedToken(true);
+                    setSearching(false);
+                  }
+                : undefined
+            }
+          />
+          {nameInvalid ? (
+            <Box
+              id={`${id('name')}-error`}
+              sx={{ mt: '4px', fontSize: 12, color: tokens.color.urgentFg }}
+            >
+              {t('review:error.name')}
+            </Box>
+          ) : null}
+        </Box>
 
         {/* While searching the results take the sheet's height: the other fields step aside. */}
         <Box
           hidden={searching}
           sx={{ display: searching ? 'none' : 'contents' }}
         >
-          {unmatched ? (
-            <Field
-              htmlFor={id('name')}
-              label={t('review:field.name')}
-              error={
-                invalid.includes('name') ? t('review:error.name') : undefined
-              }
-              errorId={`${id('name')}-error`}
-            >
-              <NameInput
-                line={line}
-                onChange={onChange}
-                id={id('name')}
-                invalid={invalid.includes('name')}
-                errorId={`${id('name')}-error`}
-              />
-            </Field>
-          ) : null}
-
           {unmatched ? (
             <Field htmlFor={id('category')} label={t('review:field.category')}>
               <CategorySelect

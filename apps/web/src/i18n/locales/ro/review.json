@@ -67,7 +67,8 @@
     "choose": "Alege",
     "change": "Schimbă",
     "unmatchedLabel": "{{name}}: Fără potrivire · Alege",
-    "dialogTitle": "Schimbă potrivirea pentru {{name}}"
+    "dialogTitle": "Schimbă potrivirea pentru {{name}}",
+    "unmatchedTag": "Fără potrivire"
   },
   "action": {
     "remove": "Elimină {{name}}",

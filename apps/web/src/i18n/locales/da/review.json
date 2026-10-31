@@ -66,7 +66,8 @@
     "choose": "Vælg",
     "change": "Skift",
     "unmatchedLabel": "{{name}}: Intet match · Vælg",
-    "dialogTitle": "Skift match for {{name}}"
+    "dialogTitle": "Skift match for {{name}}",
+    "unmatchedTag": "Ikke matchet"
   },
   "action": {
     "remove": "Fjern {{name}}",
