@@ -136,6 +136,7 @@ export function ReviewPage({
         onSheetExited={screen.sheetExited}
         onChange={screen.change}
         onSwapMatch={screen.openSwap}
+        onPickMatch={screen.pickMatch}
         onRemove={screen.remove}
         onConfirm={screen.confirm}
         onRestore={screen.restore}

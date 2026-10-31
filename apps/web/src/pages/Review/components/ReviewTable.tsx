@@ -1,6 +1,6 @@
 import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent } from '../../../lib/catalog';
+import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
 import {
   accessibleNamesOf,
   displayName,
@@ -28,6 +28,7 @@ type Props = {
   onSheetExited: () => void;
   onChange: (key: string, patch: Partial<ReviewLine>) => void;
   onSwapMatch: (key: string) => void;
+  onPickMatch: (key: string, match: CatalogSearchResult) => void;
   onRemove: (key: string) => void;
   onConfirm: (key: string) => void;
   onRestore: (key: string) => void;
@@ -50,6 +51,7 @@ export function ReviewTable({
   onSheetExited,
   onChange,
   onSwapMatch,
+  onPickMatch,
   onRemove,
   onConfirm,
   onRestore,
@@ -136,6 +138,7 @@ export function ReviewTable({
           onExited={onSheetExited}
           onChange={(patch) => onChange(sheetLine.key, patch)}
           onSwapMatch={() => onSwapMatch(sheetLine.key)}
+          onPickMatch={(match) => onPickMatch(sheetLine.key, match)}
           onRemove={() => onRemove(sheetLine.key)}
           onConfirm={() => onConfirm(sheetLine.key)}
         />
